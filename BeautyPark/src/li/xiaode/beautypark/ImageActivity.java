@@ -28,7 +28,7 @@ public class ImageActivity extends Activity {
 		Intent intent = getIntent();
 		String url = intent.getStringExtra(MainActivity.EXTRA_MESSAGE);
 		
-		url = "http://image3.uuu9.com/war3/dota//UploadFiles_5254//201304/201304271757318511.jpg";
+		//url = "http://image3.uuu9.com/war3/dota//UploadFiles_5254//201304/201304271757318511.jpg";
 		ImageView imageView = new ImageView(this);
 		
 		DownloadImageTask task = new DownloadImageTask(imageView);

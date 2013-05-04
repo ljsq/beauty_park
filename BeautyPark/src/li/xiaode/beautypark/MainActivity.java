@@ -35,6 +35,9 @@ public class MainActivity extends Activity {
 	public void displayImage(View view) {
 		// display image
 		Intent intent = new Intent(this, ImageActivity.class);
+		EditText editText = (EditText)findViewById(R.id.edit_message);
+		String url = editText.getText().toString();
+		intent.putExtra(EXTRA_MESSAGE, url);
 		startActivity(intent);
 	}
 
