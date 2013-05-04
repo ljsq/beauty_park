@@ -31,5 +31,11 @@ public class MainActivity extends Activity {
 		intent.putExtra(EXTRA_MESSAGE, message);
 		startActivity(intent);
 	}
+	
+	public void displayImage(View view) {
+		// display image
+		Intent intent = new Intent(this, ImageActivity.class);
+		startActivity(intent);
+	}
 
 }

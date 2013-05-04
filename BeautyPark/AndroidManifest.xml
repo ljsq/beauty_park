@@ -7,6 +7,8 @@
     <uses-sdk
         android:minSdkVersion="8"
         android:targetSdkVersion="17" />
+    
+    <uses-permission android:name = "android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"
@@ -25,6 +27,14 @@
         <activity
             android:name="li.xiaode.beautypark.DisplayMessageActivity"
             android:label="@string/title_activity_display_message"
+            android:parentActivityName="li.xiaode.beautypark.MainActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="li.xiaode.beautypark.MainActivity" />
+        </activity>
+        <activity
+            android:name="li.xiaode.beautypark.ImageActivity"
+            android:label="@string/title_activity_image"
             android:parentActivityName="li.xiaode.beautypark.MainActivity" >
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"

@@ -7,5 +7,7 @@
     <string name="button_send">Send</string>
     <string name="title_activity_display_message">DisplayMessageActivity</string>
     <string name="hello_world">Hello world!</string>
+    <string name="title_activity_image">ImageActivity</string>
+    <string name="display_image">display image</string>
 
 </resources>
