@@ -13,6 +13,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
@@ -20,6 +21,44 @@ import android.widget.ImageView;
 
 
 public class ImageActivity extends Activity {
+	
+	public static int calculateInSampleSize(
+			BitmapFactory.Options options, int reqWidth, int reqHeight) {
+		//Raw width and height of image
+		final int height = options.outHeight;
+		final int width = options.outWidth;
+		int inSampleSize = 1;
+		
+		if (height > reqHeight || width > reqWidth) {
+			final int heightRatio = Math.round((float)height / (float)reqHeight);
+			final int widthRatio = Math.round((float)width / (float)reqHeight);
+			inSampleSize = heightRatio > widthRatio ? heightRatio : widthRatio;
+		}
+		return inSampleSize;
+	}
+	
+	public static Bitmap decodeSampleBitmapFromUrl(String url, int reqWidth, int reqHeight) {
+		final BitmapFactory.Options options = new BitmapFactory.Options();
+		options.inJustDecodeBounds = true;
+		
+		Log.i("decodeSampleBitmapFromUrl", "url" + url);
+		/*try {
+			return BitmapFactory.decodeStream((InputStream)new URL(url).getContent());
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;*/
+		try {	
+			BitmapFactory.decodeStream((InputStream)new URL(url).getContent(), null, options);
+			options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
+		
+			options.inJustDecodeBounds = false;
+			return BitmapFactory.decodeStream((InputStream)new URL(url).getContent(), null, options);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -80,12 +119,8 @@ public class ImageActivity extends Activity {
 		@Override
 		protected Bitmap doInBackground(String... urls) {
 			String url = urls[0];
-			Bitmap bitmap = null;
-			try {
-				bitmap = BitmapFactory.decodeStream((InputStream)new URL(url).getContent());
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			Log.i("DownloadImageTask", "url" + url);
+			Bitmap bitmap = decodeSampleBitmapFromUrl(url, 100, 100);
 			return bitmap;
 		}
 		
