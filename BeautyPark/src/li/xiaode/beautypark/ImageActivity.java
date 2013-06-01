@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.net.URL;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Intent;
@@ -15,6 +16,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
+import android.support.v4.util.LruCache;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -23,6 +25,8 @@ import android.widget.ImageView;
 
 
 public class ImageActivity extends Activity {
+	
+	private LruCache<String, Bitmap> mCache;
 	
 	public static int calculateInSampleSize(
 			BitmapFactory.Options options, int reqWidth, int reqHeight) {
@@ -90,22 +94,59 @@ public class ImageActivity extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		
+		final int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024); //KB
+		final int cacheSize = maxMemory / 8;
+		
+		Log.i("ON_CREATE", "CacheSize:" + cacheSize);
+		mCache = new LruCache<String, Bitmap>(cacheSize) {
+			@SuppressLint("NewApi")
+			@Override
+			protected int sizeOf(String key, Bitmap bitmap) {
+				//The size of cache will be measured by kilobytes rather than num of items
+				return bitmap.getByteCount() / 1024;
+			}
+		};
 
 		Intent intent = getIntent();
 		String url = intent.getStringExtra(MainActivity.EXTRA_MESSAGE);
 		
 		//url = "http://image3.uuu9.com/war3/dota//UploadFiles_5254//201304/201304271757318511.jpg";
 		ImageView imageView = new ImageView(this);
+		loadBitmap(url, imageView);
 		
-		if (cancelPotentialWork(url, imageView)) {
-			final DownloadImageTask task = new DownloadImageTask(imageView);
-			final AsyncDrawable drawable = new AsyncDrawable(task);
-			imageView.setImageDrawable(drawable);
-			task.execute(url);
-		}
 		setContentView(imageView);
 	}
 
+	public void addBitmapToCache(String key, Bitmap bitmap) {
+		if (getBitmapFromCache(key) == null) {
+			Log.i("Add_Cache", "key:" + key);
+			mCache.put(key,  bitmap);
+		}
+	}
+	
+	public Bitmap getBitmapFromCache(String key) {
+		Log.i("Get_Cache", "key:" + key);
+		return mCache.get(key);
+	}
+	
+	public void loadBitmap(String url, ImageView view) {
+		final Bitmap bitmap = getBitmapFromCache(url);
+		
+		Log.i("load_bitmap", "start");
+		if (bitmap != null) {
+			Log.i("load_bitmap", "bitmap in cache");
+			view.setImageBitmap(bitmap);
+		} else {
+			if (cancelPotentialWork(url, view)) {
+				final DownloadImageTask task = new DownloadImageTask(view);
+				final AsyncDrawable drawable = new AsyncDrawable(task);
+				view.setImageDrawable(drawable);
+				task.execute(url);
+			}
+		}
+	}
+	
 	/**
 	 * Set up the {@link android.app.ActionBar}, if the API is available.
 	 */
@@ -165,6 +206,7 @@ public class ImageActivity extends Activity {
 			url = urls[0];
 			Log.i("DownloadImageTask", "url" + url);
 			Bitmap bitmap = decodeSampleBitmapFromUrl(url, 100, 100);
+			addBitmapToCache(url, bitmap);
 			return bitmap;
 		}
 		
