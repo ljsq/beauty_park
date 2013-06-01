@@ -9,6 +9,8 @@ import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -60,6 +62,31 @@ public class ImageActivity extends Activity {
 		}
 	}
 	
+	public static DownloadImageTask getDownloadImageTask(ImageView view) {
+		if (view != null) {
+			final Drawable drawable = view.getDrawable();
+			if (drawable instanceof AsyncDrawable) {
+				final AsyncDrawable asyncDrawable = (AsyncDrawable)drawable;
+				return asyncDrawable.getDownloadImageTask();
+			}
+		}
+		return null;
+	}
+	
+	public static boolean cancelPotentialWork(String url, ImageView view){
+		final DownloadImageTask task = getDownloadImageTask(view);
+		
+		if (task != null) {
+			final String oldUrl = task.url;
+			if (oldUrl != url) {
+				task.cancel(true);
+			} else {
+				return false;
+			}
+		}
+		return true;
+	}
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -70,8 +97,12 @@ public class ImageActivity extends Activity {
 		//url = "http://image3.uuu9.com/war3/dota//UploadFiles_5254//201304/201304271757318511.jpg";
 		ImageView imageView = new ImageView(this);
 		
-		DownloadImageTask task = new DownloadImageTask(imageView);
-		task.execute(url);
+		if (cancelPotentialWork(url, imageView)) {
+			final DownloadImageTask task = new DownloadImageTask(imageView);
+			final AsyncDrawable drawable = new AsyncDrawable(task);
+			imageView.setImageDrawable(drawable);
+			task.execute(url);
+		}
 		setContentView(imageView);
 	}
 
@@ -109,8 +140,21 @@ public class ImageActivity extends Activity {
 		return super.onOptionsItemSelected(item);
 	}
 	
+	public class AsyncDrawable extends ColorDrawable {
+		private final WeakReference<DownloadImageTask> downloadImageTaskReference;
+		
+		public AsyncDrawable(DownloadImageTask task) {
+			downloadImageTaskReference = new WeakReference<DownloadImageTask>(task);
+		}
+		
+		public DownloadImageTask getDownloadImageTask() {
+			return downloadImageTaskReference.get();
+		}
+	}
+	
 	public class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
 		private final WeakReference<ImageView> imageViewReference;
+		private String url;
 		
 		public DownloadImageTask(ImageView view) {
 			imageViewReference = new WeakReference<ImageView>(view);
@@ -118,7 +162,7 @@ public class ImageActivity extends Activity {
 		
 		@Override
 		protected Bitmap doInBackground(String... urls) {
-			String url = urls[0];
+			url = urls[0];
 			Log.i("DownloadImageTask", "url" + url);
 			Bitmap bitmap = decodeSampleBitmapFromUrl(url, 100, 100);
 			return bitmap;
@@ -126,9 +170,13 @@ public class ImageActivity extends Activity {
 		
 		@Override
 		protected void onPostExecute(Bitmap bitmap) {
+			if (isCancelled()) {
+				bitmap = null;
+			}
 			if (imageViewReference != null && bitmap != null) {
 				final ImageView imageView = imageViewReference.get();
-				if (imageView != null) {
+				final DownloadImageTask task = getDownloadImageTask(imageView);
+				if (this == task && imageView != null) {
 					imageView.setImageBitmap(bitmap);
 				}
 			}
